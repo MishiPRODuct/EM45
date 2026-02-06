@@ -6,6 +6,7 @@ package com.mishipay.pos.domain
 data class BasketItem(
     val epc: String,              // Raw EPC hex string
     val sku: String? = null,      // Decoded GTIN-14 (null if decode failed)
+    val serialNumber: String? = null, // Decoded serial number (AI 21)
     val price: Int = 100,
     val quantity: Int = 1
 ) {

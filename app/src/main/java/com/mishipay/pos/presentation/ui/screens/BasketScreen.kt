@@ -149,14 +149,21 @@ private fun BasketItemCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Show EPC below if SKU was decoded
-            if (item.sku != null) {
+            // Show Serial Number (AI 21) if decoded
+            if (item.serialNumber != null) {
                 Text(
-                    text = "EPC: ${item.epc}",
+                    text = "Serial: ${item.serialNumber}",
                     fontSize = 12.sp,
                     color = MediumGray
                 )
             }
+
+            // Show EPC
+            Text(
+                text = "EPC: ${item.epc}",
+                fontSize = 11.sp,
+                color = MediumGray
+            )
 
             Spacer(modifier = Modifier.height(4.dp))
             Text(

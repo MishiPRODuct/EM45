@@ -37,29 +37,29 @@ class BasketViewModel : ViewModel() {
                 }
                 currentBasket.copy(items = updatedItems)
             } else {
-                // New item - decode EPC to get SKU
-                val sku = decodeEpcToSku(epc)
-                val newItem = BasketItem(epc = epc, sku = sku)
+                // New item - decode EPC to get GTIN and serial
+                val (sku, serial) = decodeEpc(epc)
+                val newItem = BasketItem(epc = epc, sku = sku, serialNumber = serial)
                 currentBasket.copy(items = currentBasket.items + newItem)
             }
         }
     }
 
     /**
-     * Decode EPC to GTIN/SKU using SGTIN-96 algorithm
-     * Returns null if decoding fails
+     * Decode EPC to GTIN (AI 01) and Serial Number (AI 21) using SGTIN-96 algorithm
+     * Returns pair of (gtin, serialNumber), both null if decoding fails
      */
-    private fun decodeEpcToSku(epc: String): String? {
+    private fun decodeEpc(epc: String): Pair<String?, String?> {
         return when (val result = EpcDecoder.decode(epc)) {
-            is EpcDecodeResult.Success -> result.gtin
-            is EpcDecodeResult.Failure -> null
+            is EpcDecodeResult.Success -> Pair(result.gtin, result.serialNumber)
+            is EpcDecodeResult.Failure -> Pair(null, null)
         }
     }
 
     fun addTagToSession(epc: String) {
         if (_sessionTags.value.none { it.epc == epc }) {
-            val sku = decodeEpcToSku(epc)
-            _sessionTags.update { it + ScannedTag(epc = epc, sku = sku) }
+            val (sku, serial) = decodeEpc(epc)
+            _sessionTags.update { it + ScannedTag(epc = epc, sku = sku, serialNumber = serial) }
         }
     }
 
@@ -86,11 +86,12 @@ class BasketViewModel : ViewModel() {
 }
 
 /**
- * Represents a scanned tag with both EPC and decoded SKU
+ * Represents a scanned tag with EPC, decoded SKU (GTIN), and serial number
  */
 data class ScannedTag(
     val epc: String,
-    val sku: String?
+    val sku: String?,           // AI 01 - GTIN-14
+    val serialNumber: String?   // AI 21 - Serial Number
 ) {
     val displayName: String
         get() = sku ?: epc

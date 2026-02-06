@@ -336,14 +336,20 @@ private fun ScannedTagItem(tag: ScannedTag) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                // Show EPC below if SKU was decoded
-                if (tag.sku != null) {
+                // Show Serial Number (AI 21) if decoded
+                if (tag.serialNumber != null) {
                     Text(
-                        text = "EPC: ${tag.epc}",
+                        text = "Serial: ${tag.serialNumber}",
                         fontSize = 11.sp,
                         color = MediumGray
                     )
                 }
+                // Show EPC
+                Text(
+                    text = "EPC: ${tag.epc}",
+                    fontSize = 10.sp,
+                    color = MediumGray
+                )
                 Text(
                     text = "100 SAR",
                     fontSize = 14.sp,
