@@ -36,8 +36,9 @@ object EpcDecoder {
      */
     fun decode(hexEpc: String): EpcDecodeResult {
         return try {
-            // Clean and validate input
-            val cleanHex = hexEpc.replace(" ", "").uppercase()
+            // Clean and validate input - strip ALL non-hex characters
+            // (Zebra SDK tagID can contain invisible chars like \0, \n, etc.)
+            val cleanHex = hexEpc.filter { it in "0123456789abcdefABCDEF" }.uppercase()
 
             // SGTIN-96 should be 24 hex characters (96 bits)
             if (cleanHex.length != 24) {
@@ -82,13 +83,13 @@ object EpcDecoder {
             val itemRefBinary = binary.substring(companyPrefixEnd, itemRefEnd)
             val itemRefValue = itemRefBinary.toLong(2)
 
-            // The item reference includes the indicator digit
-            // Total digits = itemRefDigits + 1 (for indicator)
+            // The item reference field includes the indicator digit
+            // Total digits = itemRefDigits (indicator is already counted)
             val itemRefWithIndicator = itemRefValue.toString()
-                .padStart(partitionInfo.itemRefDigits + 1, '0')
+                .padStart(partitionInfo.itemRefDigits, '0')
 
             val indicator = itemRefWithIndicator.first()
-            val itemReference = itemRefWithIndicator.drop(1).padStart(partitionInfo.itemRefDigits, '0')
+            val itemReference = itemRefWithIndicator.drop(1)
 
             // Extract serial number
             val serialBinary = binary.substring(serialStart, serialEnd)

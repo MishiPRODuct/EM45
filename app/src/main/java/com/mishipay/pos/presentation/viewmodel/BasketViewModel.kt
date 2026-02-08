@@ -1,5 +1,6 @@
 package com.mishipay.pos.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.mishipay.pos.domain.Basket
 import com.mishipay.pos.domain.BasketItem
@@ -50,7 +51,9 @@ class BasketViewModel : ViewModel() {
      * Returns pair of (gtin, serialNumber), both null if decoding fails
      */
     private fun decodeEpc(epc: String): Pair<String?, String?> {
-        return when (val result = EpcDecoder.decode(epc)) {
+        val result = EpcDecoder.decode(epc)
+        Log.d("BasketVM", "decodeEpc input='$epc' len=${epc.length} bytes=${epc.toByteArray().map { it.toInt() }} result=$result")
+        return when (result) {
             is EpcDecodeResult.Success -> Pair(result.gtin, result.serialNumber)
             is EpcDecodeResult.Failure -> Pair(null, null)
         }
