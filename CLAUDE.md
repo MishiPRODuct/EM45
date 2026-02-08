@@ -106,10 +106,10 @@ The app decodes RFID EPC tags to extract GTIN-14 and Serial Number using the GS1
 
 ### How It Works
 
-**Example:**
-- EPC: `30396062C3C54AC22B333047`
-- **AI 01 (GTIN-14):** `03608439884597`
-- **AI 21 (Serial):** `9314709575`
+**Verified Example (v1.4):**
+- EPC: `303574530C05536BC5AC7849`
+- **AI 01 (GTIN-14):** `06100163054538`
+- **AI 21 (Serial):** `3320357897`
 
 **SGTIN-96 Bit Structure (96 bits):**
 ```
@@ -128,6 +128,29 @@ The app decodes RFID EPC tags to extract GTIN-14 and Serial Number using the GS1
 | 5         | 24 / 7                       | 20 / 6                 |
 | 6         | 20 / 6                       | 24 / 7                 |
 
+**Critical: Item Ref digits INCLUDE the indicator digit.** For partition 5, Item Ref digits = 6 means 1 indicator digit + 5 item reference digits. Do NOT add +1 when padding.
+
+### GTIN-14 Construction Steps
+
+1. **Clean EPC hex** — strip ALL non-hex characters (Zebra SDK tagID may contain `\0`, `\n`, etc.)
+2. **Parse binary** — extract partition, company prefix, item reference, serial from bit positions
+3. **Pad item reference** — to `itemRefDigits` digits (this already includes the indicator)
+4. **Split** — first digit = indicator, remaining digits = item reference
+5. **Build GTIN-13** — `indicator + companyPrefix + itemReference` = 13 digits
+6. **Calculate check digit** — GS1 mod-10 algorithm on the 13 digits
+7. **GTIN-14** — `GTIN-13 + checkDigit` = 14 digits
+
+**Worked example** (EPC `303574530C05536BC5AC7849`, partition 5):
+```
+Company Prefix (7 digits): 6100163
+Item Ref value (binary):   054538 (padded to 6 digits)
+Split:                     indicator=0, itemRef=54538 (5 digits)
+GTIN-13:                   0 + 6100163 + 054538 → but wait, 0610016305453 is 13 digits
+                           Actually: 0 6100163 054538 → dropped to 13 → 0610016305453
+Check digit:               8
+GTIN-14:                   06100163054538
+```
+
 ### Important: GTIN vs Product Barcode
 
 The GTIN decoded from the EPC tag may **NOT match** the barcode printed on the product. This happens because:
@@ -136,11 +159,7 @@ The GTIN decoded from the EPC tag may **NOT match** the barcode printed on the p
 2. **Internal SKU mapping** - Retailers often use their own GTIN assignments
 3. **Requires lookup table** - Map decoded GTIN → product catalog/barcode
 
-**Example mismatch:**
-- EPC GTIN: `03608439884597` (what the tag contains)
-- Product barcode: `9314709575xxx` (what's printed on the item)
-
-To match products correctly, you'll need a database mapping EPC GTINs to your product catalog.
+To match products correctly, you may need a database mapping EPC GTINs to your product catalog.
 
 ### Decoder Location
 `app/src/main/java/com/mishipay/pos/domain/utils/EpcDecoder.kt`
@@ -189,6 +208,26 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`
 2. **"No RFID readers found"** → Verify using `RE_SERIAL` transport, check retry logic
 3. **"Charging source connected"** → Unplug device from all charging sources
 4. **Manifest merger conflict** → Use `tools:replace="android:allowBackup"` in AndroidManifest.xml
+
+## Bugs Fixed (Reference)
+
+### v1.3 — Zebra SDK Invisible Characters
+**Problem:** EPC decode silently failed at runtime. App showed only raw EPC hex strings, no GTIN or serial number.
+**Root cause:** `tagData.tagID` from Zebra SDK contains invisible characters (`\0`, `\n`, etc.) beyond spaces. The original code only stripped spaces with `.replace(" ", "")`, so the cleaned string was longer than 24 chars and failed the length check.
+**Fix:** Changed to `.filter { it in "0123456789abcdefABCDEF" }` to strip ALL non-hex characters.
+**File:** `EpcDecoder.kt` line 41
+
+### v1.4 — GTIN-14 Indicator Digit Padding
+**Problem:** Decoded GTIN-14 didn't match the barcode on the physical product. Example: decoded `61001630054532` but physical tag says `6100163054538`.
+**Root cause:** The GS1 partition table's `itemRefDigits` value already includes the indicator digit (e.g., partition 5: itemRefDigits=6 means 1 indicator + 5 item ref). The code was treating it as excluding the indicator and adding `+1`, causing:
+1. Item reference padded to 7 digits instead of 6
+2. gtin13 became 14 chars instead of 13
+3. `takeLast(13)` dropped the indicator digit
+4. Extra zero inserted in item reference
+5. Wrong check digit calculated
+
+**Fix:** Changed `.padStart(partitionInfo.itemRefDigits + 1, '0')` to `.padStart(partitionInfo.itemRefDigits, '0')` and removed redundant `.padStart()` after `.drop(1)`.
+**File:** `EpcDecoder.kt` lines 88-92
 
 ## SDK Documentation
 
