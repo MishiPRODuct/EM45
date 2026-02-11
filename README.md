@@ -2,11 +2,24 @@
 
 Mobile POS application for Zebra EM45 RFID devices.
 
+## Current Version: v1.4
+
+## Version History
+
+| Version | APK | Changes |
+|---------|-----|---------|
+| **v1.4** | `MishiPayPOS-v1.4-gtin-fix.apk` | Fixed GTIN-14 decoding — indicator digit padding corrected so decoded GTINs now match physical barcodes |
+| **v1.3** | `MishiPayPOS-v1.3-fix-decode.apk` | Fixed EPC decode failing silently — strips invisible characters from Zebra SDK tagID |
+| **v1.2** | `MishiPayPOS-v1.2-serial.apk` | Added Serial Number (AI 21) display alongside GTIN (AI 01) |
+| **v1.1** | `MishiPayPOS-v1.1-epc-decode.apk` | Added EPC to SKU (GTIN-14) decoding using SGTIN-96 algorithm |
+| **v1.0** | `MishiPayPOS-v1.0.apk` | Initial release — RFID scanning and basket management |
+
 ## Features
 
 - Touch to start welcome screen
 - RFID tag scanning with automatic reader connection
 - **EPC to SKU decoding** (SGTIN-96 → GTIN-14)
+- **Serial Number extraction** (AI 21)
 - Shopping basket with item management
 - Delete items from basket
 - Running total in SAR
@@ -15,14 +28,14 @@ Mobile POS application for Zebra EM45 RFID devices.
 ## Installation
 
 ### APK File
-The ready-to-install APK is located at:
+The latest ready-to-install APK:
 ```
-MishiPayPOS-v1.2-serial.apk
+MishiPayPOS-v1.4-gtin-fix.apk
 ```
 
 ### Install via ADB
 ```bash
-adb install MishiPayPOS-v1.2-serial.apk
+adb install MishiPayPOS-v1.4-gtin-fix.apk
 ```
 
 ### Install via File Transfer
